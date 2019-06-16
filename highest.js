@@ -12,6 +12,9 @@ function info() {
 const inputPath = process.argv[2]
 const n = process.argv[3]
 info("opening", n, "highest scores in", inputPath, "...")
+if (!fs.existsSync(inputPath)) {
+  process.exit(1)
+}
 
 
 // Open file for streaming:
@@ -98,7 +101,7 @@ function handleChunk(chunk) {
     const match = chunk.match(/\n|\"id\":\s*\"([^\"]+)\"/)
 
     if (match[0].length == 1) {
-      throw new Error("Encountered a newline before an id. Not good.")
+      process.exit(1)
     } else {
       idMatch = match
     }
