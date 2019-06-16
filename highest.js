@@ -5,20 +5,59 @@ const inputPath = process.argv[2]
 const n = process.argv[3]
 console.log("opening", n, "highest scores in", inputPath, "...")
 
+
+// Open file for streaming:
+
 const stream = fs.createReadStream(inputPath)
 stream.setEncoding("utf8");
-
-const NEW_LINE_CHAR = 10
-let state = "started-new-line"
-
-
-
 stream.on("data", handleChunk)
+stream.on("end", finish)
 
-stream.on("end", () => handleChunk("\n"))
+function finish() {
+  handleChunk("\n") // might be one score left if no newline at the end of the file
+  console.log("\n\nSCORES\n======\n")
+  console.log(JSON.stringify(highScores, null, 2))
+}
 
+
+// Handle newly discovered scores:
+
+const highScores = [] // sorted from lowest score to highest
+
+function addScore(score, id) {
+  const outOfSpace = highScores.length == n
+  const lowestHighScore = highScores.length && highScores[0].score
+
+  if (outOfSpace && score < lowestHighScore) {
+    return
+  }
+
+  if (outOfSpace) {
+    highScores.unshift() // lowest score should be at the front of the list
+  }
+
+  highScores.push({
+    id: id,
+    score: score
+  })
+
+  highScores.sort(byScore)
+
+  console.log("\n"+id+" SCORED "+score+"\n")
+}
+
+function byScore(a, b) {
+  return a.score - b.score
+}
+
+
+
+// Parse chunks of text:
+
+let state = "started-new-line"
 let score
 let id
+const NEW_LINE_CHAR = 10
 
 function handleChunk(chunk) {
 
@@ -88,7 +127,3 @@ function handleChunk(chunk) {
 
 }
 
-
-function addScore(score, id) {
-  console.log("\n"+id+" SCORED "+score+"\n")
-}
