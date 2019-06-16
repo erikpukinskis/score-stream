@@ -81,11 +81,7 @@ function handleChunk(chunk) {
   
   if (state == "started-new-line") {
     info(" --- started new line")
-    const scoreMatch = chunk.match(/^([0-9]+): /)
-    if (!scoreMatch) {
-      debugger
-      throw new Error("Done?")
-    }
+    const scoreMatch = chunk.match(/^\s*([0-9]+): /)
 
     score = parseInt(scoreMatch[1])
     const matchedLength = scoreMatch[0].length
@@ -101,7 +97,7 @@ function handleChunk(chunk) {
     const match = chunk.match(/\n|\"id\":\s*\"([^\"]+)\"/)
 
     if (match[0].length == 1) {
-      process.exit(1)
+      process.exit(2)
     } else {
       idMatch = match
     }
