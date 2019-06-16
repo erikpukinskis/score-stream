@@ -1,9 +1,17 @@
 
 const fs = require("fs")
 
+function info() {
+  // uncomment this to get debugging info:
+  // console.log.apply(console, arguments)
+}
+
+
+// Handle command line args:
+
 const inputPath = process.argv[2]
 const n = process.argv[3]
-console.log("opening", n, "highest scores in", inputPath, "...")
+info("opening", n, "highest scores in", inputPath, "...")
 
 
 // Open file for streaming:
@@ -15,7 +23,6 @@ stream.on("end", finish)
 
 function finish() {
   handleChunk("\n") // might be one score left if no newline at the end of the file
-  console.log("\n\nSCORES\n======\n")
   console.log(JSON.stringify(highScores, null, 2))
 }
 
@@ -26,14 +33,13 @@ const highScores = [] // sorted from lowest score to highest
 
 function addScore(score, id) {
   const outOfSpace = highScores.length == n
-  const lowestHighScore = highScores.length && highScores[0].score
-
-  if (outOfSpace && score < lowestHighScore) {
+debugger
+  if (outOfSpace && score < highScores[0].score) {
     return
   }
 
   if (outOfSpace) {
-    highScores.unshift() // lowest score should be at the front of the list
+    highScores.shift()
   }
 
   highScores.push({
@@ -43,7 +49,7 @@ function addScore(score, id) {
 
   highScores.sort(byScore)
 
-  console.log("\n"+id+" SCORED "+score+"\n")
+  info("\n"+id+" SCORED "+score+"\n")
 }
 
 function byScore(a, b) {
@@ -66,12 +72,12 @@ function handleChunk(chunk) {
     if (id) {
       addScore(score, id)
     }
-    console.log(" --- only whitespace left")
+    info(" --- only whitespace left")
     return
   }
   
   if (state == "started-new-line") {
-    console.log(" --- started new line")
+    info(" --- started new line")
     const scoreMatch = chunk.match(/^([0-9]+): /)
     if (!scoreMatch) {
       debugger
@@ -82,13 +88,13 @@ function handleChunk(chunk) {
     const matchedLength = scoreMatch[0].length
     const remainder = chunk.slice(matchedLength)
 
-    console.log(" --- "+remainder.length+" left in chunk")
+    info(" --- "+remainder.length+" left in chunk")
 
     state = "scanning-for-id"
     handleChunk(remainder)
 
   } else if (state == "scanning-for-id") {
-    console.log(" --- scanning for id")
+    info(" --- scanning for id")
     const match = chunk.match(/\n|\"id\":\s*\"([^\"]+)\"/)
 
     if (match[0].length == 1) {
@@ -102,7 +108,7 @@ function handleChunk(chunk) {
       const matchedLength = idMatch[0].length
       const remainder = chunk.slice(matchedLength)
 
-      console.log(" --- found id "+id+". "+remainder.length+" left in chunk")
+      info(" --- found id "+id+". "+remainder.length+" left in chunk")
 
       state = "waiting-for-newline"
       handleChunk(remainder)
