@@ -43,8 +43,8 @@ debugger
   }
 
   highScores.push({
+    score: score,
     id: id,
-    score: score
   })
 
   highScores.sort(byScore)
