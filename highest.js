@@ -33,7 +33,7 @@ const highScores = [] // sorted from lowest score to highest
 
 function addScore(score, id) {
   const outOfSpace = highScores.length == n
-debugger
+
   if (outOfSpace && score < highScores[0].score) {
     return
   }
