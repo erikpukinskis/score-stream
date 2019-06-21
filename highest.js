@@ -1,9 +1,10 @@
 
 const fs = require("fs")
+const readline = require("readline")
 
 function info() {
   // uncomment this to get debugging info:
-  // console.log.apply(console, arguments)
+  console.log.apply(console, arguments)
 }
 
 
@@ -21,11 +22,15 @@ if (!fs.existsSync(inputPath)) {
 
 const stream = fs.createReadStream(inputPath)
 stream.setEncoding("utf8");
-stream.on("data", handleChunk)
-stream.on("end", finish)
+
+const rl = readline.createInterface({
+  input: stream,
+})
+
+rl.on("line", handleLine)
+rl.on("close", finish)
 
 function finish() {
-  handleChunk("\n") // might be one score left if no newline at the end of the file
   console.log(JSON.stringify(highScores, null, 2))
 }
 
@@ -63,72 +68,30 @@ function byScore(a, b) {
 
 // Parse chunks of text:
 
-let state = "started-new-line"
-let score
-let id
-const NEW_LINE_CHAR = 10
+function handleLine(line) {
+  let score
+  let id
 
-function handleChunk(chunk) {
-
-  const whitespaceMatch = chunk.match(/^\s*/)
-  if (whitespaceMatch[0].length == chunk.length) {
-    if (id) {
-      addScore(score, id)
-    }
+  const whitespaceMatch = line.match(/^\s*/)
+  if (whitespaceMatch[0].length == line.length) {
     info(" --- only whitespace left")
     return
   }
   
-  if (state == "started-new-line") {
-    info(" --- started new line")
-    const scoreMatch = chunk.match(/^\s*([0-9]+): /)
+  const scoreMatch = line.match(/^\s*([0-9]+): /)
 
-    score = parseInt(scoreMatch[1])
-    const matchedLength = scoreMatch[0].length
-    const remainder = chunk.slice(matchedLength)
+  score = parseInt(scoreMatch[1])
+  const matchedLength = scoreMatch[0].length
+  const remainder = line.slice(matchedLength)
 
-    info(" --- "+remainder.length+" left in chunk")
+  info(" --- found score "+score+", "+remainder.length+" left in line")
 
-    state = "scanning-for-id"
-    handleChunk(remainder)
+  const object = JSON.parse(remainder)
 
-  } else if (state == "scanning-for-id") {
-    info(" --- scanning for id")
-    const match = chunk.match(/\n|\"id\":\s*\"([^\"]+)\"/)
-
-    if (match[0].length == 1) {
-      process.exit(2)
-    } else {
-      idMatch = match
-    }
-
-    if (idMatch) {
-      id = idMatch[1]
-      const matchedLength = idMatch[0].length
-      const remainder = chunk.slice(matchedLength)
-
-      info(" --- found id "+id+". "+remainder.length+" left in chunk")
-
-      state = "waiting-for-newline"
-      handleChunk(remainder)
-    }
-
-  } else if (state == "waiting-for-newline") {
-    const newlineMatch = chunk.match(/\n/)
-
-    if (!newlineMatch) {
-      return
-    }
-
-    const matchedLength = newlineMatch.index+1
-    const remainder = chunk.slice(newlineMatch.index+1)
-
-    addScore(score, id)
-    id = null
-    score = null
-    state = "started-new-line"
-    handleChunk(remainder)
+  if (typeof object.id != "string") {
+    process.exit(2)
   }
 
+  addScore(score, object.id)
 }
 
